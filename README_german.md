@@ -1,35 +1,36 @@
-# libcgraph (Incidence-Type-RePair)
+# libcgraph
 
 **Autor:** FR, EA
 
-libcgraph is a C-library to compress and search in labeled graphs, especially in RDF-graphs.
+libcgraph ist eine C-Bibliothek zum Komprimieren und Durchsuchen von RDF-Graphen.
 
-The library should run on Linux and macOS, it is not supported on Windows.
+Diese Bibliothek sollte auf Linux und Mac funktionieren, sie wird nicht auf Windows unterstützt.
 
-If you have questions regarding the implementation, feel free to contacht adlerenno.
+Fragen bezüglich dieser Implementierung können an adlerenno gestellt werden.
 
 ## Dependencies
 
-- [libdivsufsort](https://github.com/y-256/libdivsufsort) to create the suffix-array
+- [libdivsufsort](https://github.com/y-256/libdivsufsort) zum Erstellen des Suffix-Arrays
     - brew tap brewsci/bio
     - brew install Formula/libdivsufsort
     
-- [serd](https://github.com/drobilla/serd) needed by the command-line-tool to read RDF-graphs
+- [serd](https://github.com/drobilla/serd) für das Command-Line-Tool zum Lesen von RDF-Graphen
     - brew install serd
-- On some systems it might be necessary to adjust the CMakeLists file.
+
+- Auf manchen System kann es notwendig sein, die CMakeLists Datei anzupassen.
   - set(INCLUDES
   - ${CMAKE_CURRENT_BINARY_DIR}
   - src/bits
   - ...
-  - /usr/local/include <- new added path to folder with divsufsort64.h
-  - /usr/local/include/serd-0/serd <- new added path to folder with serd-0.h
-  - ) # End of INCLUDES
-  - target_link_libraries(${PROJECT_NAME} PRIVATE libdivsufsort64.dylib) # link with libdivsufsort to create the suffix array  <- change path here to /usr/local/lib/libdivsufsort64.dylib
-  - target_link_libraries(cgraph-cli PRIVATE libserd-0.dylib) # RDF-parser <- change path here to /usr/local/lib/libserd-0.dylib
+  - /usr/local/include <- Pfad zum Ordner mit divsufsort64.h
+  - /usr/local/include/serd-0/serd <- Pfad zum Ordner mit serd-0.h
+  - )
+  - target_link_libraries(${PROJECT_NAME} PRIVATE /usr/local/lib/libdivsufsort64.dylib) # link with libdivsufsort to create the suffix array  <- Pfad hier ändern
+  - target_link_libraries(cgraph-cli PRIVATE /usr/local/lib/libserd-0.dylib) # RDF-parser <- Pfad hier ändern
 
 ## Build
 
-To build, you need `cmake` and you can compile the library by:
+Für das Build wird `cmake` benötigt und kann folgendermaßen kompiliert werden:
 
 ```bash
 mkdir -p build
@@ -38,7 +39,7 @@ cmake -DCMAKE_BUILD_TYPE=Release -DOPTIMIZE_FOR_NATIVE=on -DWITH_RRR=on ..
 make
 ```
 
-The following parameters can be passed to CMake:
+Es existieren folgende Parameter für CMake:
 
 - `-DCMAKE_BUILD_TYPE=Release` aktiviert Compiler-Optimierungen
 - `-DOPTIMIZE_FOR_NATIVE=on` aktiviert prozessorspezifische Instruktionen, sodass z.B. optimierte Instruktionen für `popcnt` aktiviert werden
@@ -46,13 +47,19 @@ The following parameters can be passed to CMake:
 - `-DWITH_RRR=on` aktiviert die Unterstüzung für Bitsequenzen vom Typ RRR (siehe unten) 
 - `-DCLI=off` deaktiviert das Erstellen des Command-Line-Tools
 
-The library will be in the build-directory as "libcgraph.1.0.0.dylib" (macOS) or "libcgraph.so.1.0.0" (Linux).
-The command-line-tool is in the build-directory as well and is called "cgraph-cli".
+Die Bibliothek befindet sich anschließend im build-Ordner als "libcgraph.1.0.0.dylib" (macOS) oder "libcgraph.so.1.0.0" (Linux).
+Weiterhin befindet sich das Command-Line-Tool im build-Ordner unter den Namen "cgraph-cli".
+
+### Bitsequenzen vom Typ RRR
+
+Um Bitsequenzen vom Typ RRR (siehe Bachelorarbeit) zu verwenden, kann zusätzlich das Argument `-DWITH_RRR=on` angegeben werden.
+Da einige statische Tabellen, die für diese Bitsequenzen benötigt werden, mit kompiliert werden, vergrößert sich die Größe der Bibliothek um ungefähr 80 %.
+Aus diesem Grund ist die Unterstützung dieser Bitsequenzen optional.
 
 ## Command-Line-Tool
 
-With the command-line-tool "cgraph-cli" you can compress graphs and search within them.
-The following help can also be obtained by `./cgraph-cli --help`.
+Mithilfe des Command-Line-Tools "cgraph-cli" lassen sich RDF-Graphen komprimieren und durchsuchen.
+Wie dieses Programm verwendet wird, wird mit `./cgraph-cli --help` ausgegeben:
 
 ```
 Usage: cgraph-cli
@@ -109,8 +116,9 @@ Usage: cgraph-cli
        --edge-labels                    returns the number of different edge labels in the graph\n"
 ```
 
-The command-line-tool allows via serd the Turtle, TriG, NTriples and NQuads formats for RDF-graphs. Additionally, there is a parser for hypergraphs. The formatting of a hypergraph file is one edge per line, each line starts with the label of the edge and is followed by the name of the nodes. The elements in a line can be seprarated by a white space or a tab. Note that the nodes are treated as named, so numbers would be inserted as names into the dictionary and the internally used numbers can differ.
+Das Command-Line-Tool kann über die Serd-Bibliothekt die Formate Turtle, TriG, NTriples und NQuads. Zudem wird ein  Parser für Hypergraphen unterstützt. Dieser liest eine Kante pro Zeile und teilt an jedem Leerzeichen oder Tab.
+Im Hypergraph-Format wird das erste Wort wird als Label verstanden, danach sequenziell als Knoten.
 
-## Library
+## Bibliothek
 
-To use Incidence-Type-RePair as a library, in the include folder is the corresponding header file with the methods supported by the library.
+Es ist möglich, Incidence-Type-RePair als Bibliothekt einzubinden. Im Ordner include liegt die entsprechende Headerdatei für die erzeugte Bibliothek.
