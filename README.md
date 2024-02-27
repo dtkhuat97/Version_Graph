@@ -76,6 +76,9 @@ Usage: cgraph-cli
        --sampling      [sampling]       sampling value of the dictionary; a value of 0 disables sampling (default: 32)
        --no-rle                         disable run-length encoding
        --no-table                       do not add an extra table to speed up the decompression of the neighborhood for an specific label
+       --rrr                            use bitsequences based on R. Raman, V. Raman, and S. S. Rao [experimental]
+                                        --factor can also be applied to this type of bit sequences
+
 
  * to read a compressed RDF graph:
    cgraph-cli [options] [input] [commands...]
@@ -87,7 +90,7 @@ Usage: cgraph-cli
        --overwrite                      overwrite if the output file exists, used with `--decompress`
 
    commands to read the compressed path:
-       --decompress    [RDF graph]      decompresses the given compressed RDF graph
+       --decompress    [output]      decompresses the given compressed RDF graph
        --extract-node  [node-id]        extracts the node label of the given node id
        --extract-edge  [edge-id]        extracts the edge label of the given edge id
        --locate-node   [text]           determines the node id of the node with the given node label
