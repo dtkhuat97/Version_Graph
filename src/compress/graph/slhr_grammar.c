@@ -117,7 +117,7 @@ int slhr_grammar_rule_add(SLHRGrammar* g, uint64_t symbol, HGraph* graph) {
 
 int slhr_grammar_rank_of_rule(const SLHRGrammar* g, uint64_t symbol) {
 	if(symbol < g->min_nt)
-		return 2;
+		return 4;
 
 	assert(symbol >= g->min_nt);
 	symbol -= g->min_nt;
@@ -129,7 +129,7 @@ int slhr_grammar_rank_of_rule(const SLHRGrammar* g, uint64_t symbol) {
 
 size_t slhr_grammar_size_of_rule(const SLHRGrammar* g, uint64_t symbol) {
 	if(symbol < g->min_nt)
-		return 3;
+		return 4;
 
 	assert(symbol >= g->min_nt);
 	symbol -= g->min_nt;

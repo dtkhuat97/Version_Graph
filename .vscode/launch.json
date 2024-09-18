@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [{
+        "name": "C Launch",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/home/dtkhuat/Version_Graph/build/cgraph-cli",
+        "cwd": ".",
+        "stopAtEntry": false,
+       "args": ["--overwrite", "--verbose","--format", "hyperedge", "--max-rank", "64" ,"/home/dtkhuat/eval_datasets/semi_real_datasets/lubm-103","/home/dtkhuat/results_version/version_itr/semi_real_graphs_compressed/bla" ]
+
+    }    
+    ]
+}

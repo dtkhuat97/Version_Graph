@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "errno.h": "c",
+        "unistd.h": "c",
+        "constants.h": "c",
+        "serd.h": "c",
+        "cgraph.h": "c",
+        "string.h": "c",
+        "stdlib.h": "c",
+        "libc-header-start.h": "c"
+    }
+}

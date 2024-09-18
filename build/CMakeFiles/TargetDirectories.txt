@@ -1,0 +1,4 @@
+/home/dtkhuat/Version_Graph/build/CMakeFiles/cgraph.dir
+/home/dtkhuat/Version_Graph/build/CMakeFiles/cgraph-cli.dir
+/home/dtkhuat/Version_Graph/build/CMakeFiles/edit_cache.dir
+/home/dtkhuat/Version_Graph/build/CMakeFiles/rebuild_cache.dir

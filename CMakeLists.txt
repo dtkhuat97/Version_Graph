@@ -85,16 +85,17 @@ set(INCLUDES
   src/compress/graph
   src/reader
   src/util
-        /usr/local/include
-        /usr/local/include/serd-0/serd
+  /home/linuxbrew/.linuxbrew/include/serd-0/serd
+  /home/linuxbrew/.linuxbrew/include
 )
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE m) # link with math library
-target_link_libraries(${PROJECT_NAME} PRIVATE /usr/local/lib/libdivsufsort64.dylib)
+#target_link_libraries(${PROJECT_NAME} PRIVATE /usr/local/lib/libdivsufsort64.dylib)
 #target_link_libraries(${PROJECT_NAME} PRIVATE divsufsort64) # link with libdivsufsort to create the suffix array
+target_link_libraries(${PROJECT_NAME} PRIVATE /home/linuxbrew/.linuxbrew/lib/libdivsufsort64.so)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER ${CMAKE_CURRENT_BINARY_DIR}/cgraph.h)
@@ -117,9 +118,10 @@ if(CLI)
   target_include_directories(cgraph-cli PRIVATE ${INCLUDES})
 
   target_link_libraries(cgraph-cli PRIVATE ${PROJECT_NAME})
-  target_link_libraries(cgraph-cli PRIVATE /usr/local/lib/libserd-0.dylib)
+  #target_link_libraries(cgraph-cli PRIVATE /usr/local/lib/libserd-0.dylib)
   #target_link_libraries(cgraph-cli PRIVATE serd-0) # RDF-parser
-
+  target_link_libraries(cgraph-cli PRIVATE /home/linuxbrew/.linuxbrew/lib/libserd-0.so)
+  
   if(TRACE_SYMBOLS)
     target_link_options(cgraph-cli PRIVATE -rdynamic)
   endif()

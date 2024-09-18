@@ -223,11 +223,15 @@ int cgraphw_add_edge(CGraphW* g, const CGraphRank rank, const char* label, const
 
     if(label == NULL || (edge->label = dict_put_text(gi, label, false)) == -1) // comparing unsigned value
         return -1;
-    for (size_t i = 0; i < rank; i++)
+	//CHANGED
+    for (size_t i = 0; i < rank -2 ; i++)
     {
         if (nodes[i] == NULL || (edge->nodes[i] = dict_put_text(gi, nodes[i], true)) == -1)
             return -1;
     }
+
+	edge->nodes[rank-2] = atoi(nodes[rank-2]);
+	edge->nodes[rank-1] = atoi(nodes[rank-1]);
 
 	if(hashset_add(gi->edges, edge, hedge_sizeof(rank)) < 0)
 		return -1;
@@ -376,13 +380,16 @@ static HGraph* cgraphw_modify_ids(GraphWriterImpl* g , BitArray* bv, BitArray* b
 		e->label = (!disjunct ? bitsequence_rank1(&bs_e, tmp) : bitsequence_rank0(&bs_v, tmp)) - 1;
 		e->rank = edge->rank;
 
-		for(size_t j = 0; j < edge->rank; j++) {
+		//CHANGED
+		for(size_t j = 0; j < edge->rank-2; j++) {
 			if((tmp = dict_index(new_ids, edge->nodes[j])) == -1) // determine the index in the whole dict, comparing unsigned value
 				goto err_2;
 
 			e->nodes[j] = bitsequence_rank1(&bs_v, tmp) - 1; // determine the value in the node label dict
 		}
 
+		e->nodes[e->rank-2] = edge->nodes[edge->rank-2];
+		e->nodes[e->rank-1] = edge->nodes[edge->rank-1];
 		if(hgraph_add_edge(gr, e) < 0) {
 			free(e);
 			goto err_2;
@@ -489,7 +496,7 @@ int cgraphw_write(CGraphW* g, const char* path, bool verbose) {
 	if(bitwriter_close(&w0) < 0)
 		goto err_0;
     if (verbose) {
-        printf("    Grammar Size is %llu byte\n", bitwriter_bytelen(&w0));
+        printf("    Grammar Size is %lu byte\n", bitwriter_bytelen(&w0));
         printf("  Writing dictionary\n");
     }
 	if(dict_write(gi->dict_ve, &gi->bv, &gi->be, gi->dict_disjunct, gi->params.sampling, gi->params.rle, &w, &p) < 0)

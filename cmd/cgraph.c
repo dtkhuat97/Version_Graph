@@ -3,6 +3,7 @@
  * @author FR
  */
 
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -114,6 +115,8 @@ enum opt {
     OPT_R_HYPEREDGES,
 	OPT_R_NODE_COUNT,
 	OPT_R_EDGE_LABELS,
+	OPT_R_VERSION_INCLUDED,
+	OPT_R_NODE_IN_VERSION,
 };
 
 typedef enum {
@@ -129,6 +132,8 @@ typedef enum {
     CMD_HYPEREDGES,
 	CMD_NODE_COUNT,
 	CMD_EDGE_LABELS,
+	CMD_VERSION_INCLUDED,
+	CMD_NODE_IN_VERSION,
 } CGraphCmd;
 
 typedef struct {
@@ -260,7 +265,8 @@ static int parse_args(int argc, char** argv, CGraphArgs* argd) {
         {"hyperedges", required_argument, 0, OPT_R_HYPEREDGES},
 		{"node-count", no_argument, 0, OPT_R_NODE_COUNT},
 		{"edge-labels", no_argument, 0, OPT_R_EDGE_LABELS},
-
+		{"version-included", required_argument, 0, OPT_R_VERSION_INCLUDED},
+		{"node-in-version", required_argument, 0, OPT_R_NODE_IN_VERSION},
 		{0, 0, 0, 0}
 	};
 
@@ -388,6 +394,14 @@ static int parse_args(int argc, char** argv, CGraphArgs* argd) {
 		case OPT_R_EDGE_LABELS:
 			check_mode(mode_compress, mode_read, false);
 			add_command_none(argd, CMD_EDGE_LABELS);
+			break;
+		case OPT_R_VERSION_INCLUDED:
+			check_mode(mode_compress, mode_read, false);
+			add_command_str(argd, CMD_VERSION_INCLUDED);
+			break;
+		case OPT_R_NODE_IN_VERSION:
+			check_mode(mode_compress, mode_read, false);
+			add_command_str(argd, CMD_NODE_IN_VERSION);	
 			break;
 		case '?':
 		case ':':
@@ -534,7 +548,7 @@ exit_0:
 	return res;
 }
 
-#define MAX_LINE_LENGTH 1024
+#define MAX_LINE_LENGTH 8192
 static int hyperedge_parse(const uint8_t* filename, SerdSyntax syntax, CGraphW* g) {
     int res = -1;
 
@@ -545,20 +559,25 @@ static int hyperedge_parse(const uint8_t* filename, SerdSyntax syntax, CGraphW* 
         return res;
 
     char line[MAX_LINE_LENGTH];
-    char* n[128];
+    char* n[256];
     size_t cn = 0;
     while (fgets(line, sizeof(line), in_fd) && !err) {
         cn = 0;
         // Process each line of the hyperedge file
         // Split the line into individual items using strtok
-        char* token = strtok(line, " \t\n"); //Use empty space, tab, and newline as delimiter.
+        //char* token = strtok(line, " \t\n");
+		char* token = strtok(line, "\t\n"); //Use empty space, tab, and newline as delimiter.
         while (token != NULL) {
             n[cn++] = token;
-            if (cn == 128)
+            if (cn == 256)
                 return -1; //Allowed number of parameters are exceeded.
-            token = strtok(NULL, " \t\n");
+            //token = strtok(NULL, " \t\n");
+			token = strtok(NULL, "\t\n");
         }
-        if (cgraphw_add_edge(g, cn-1, n[0], (const char **) (n + 1)) < 0) {
+		if(cn != 5)
+			printf("bla");
+        //if (cgraphw_add_edge(g, cn-1, n[0], (const char **) (n + 1)) < 0) {
+		if (cgraphw_add_edge(g, 4, n[0], (const char **) (n + 1)) < 0) {
             err = true;
         }
     }
@@ -630,12 +649,25 @@ static int do_compress(const char* input, const char* output, const CGraphArgs* 
 
 	if(argd->verbose)
 		printf("Applying repair compression\n");
-
+	
+	clock_t start, end;
+	double cpu_time_used;
+	start = clock();
+	
 	if(cgraphw_compress(g) < 0) {
 		fprintf(stderr, "failed to compress graph\n");
 		goto exit_0;
 	}
-
+	
+	end = clock();
+	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	FILE *fpt;
+	//fpt = fopen("/home/dtkhuat/results_version/version_itr/times/var_version/18_06_2024.csv", "a");
+	//fpt = fopen("/home/dtkhuat/results_version/semi_real_18_06_2024.csv", "a");
+	fpt = fopen("/home/dtkhuat/results_version/version_itr/times/var_version/17_07_2024.csv", "a");
+	fprintf(fpt, "%f", cpu_time_used);
+	fclose(fpt);
+	
 	if(argd->verbose)
 		printf("Writing compressed graph to %s\n", output);
 
@@ -673,6 +705,9 @@ static char* rdf_node(CGraphR* g, uint64_t v, bool is_node, SerdNode* node) {
 	return s;
 }
 
+
+
+
 static int do_decompress(CGraphR* g, const char* output, const char* format, bool overwrite) {
 	int res = -1;
 
@@ -700,6 +735,7 @@ static int do_decompress(CGraphR* g, const char* output, const char* format, boo
 
     if (syntax == 5) // Syntax is hyperedge file
     {
+		/*
         char *label, *txt;
         size_t label_count = cgraphr_edge_label_count(g);
         for (CGraphEdgeLabel l = 0; l < label_count; l++)
@@ -724,7 +760,7 @@ static int do_decompress(CGraphR* g, const char* output, const char* format, boo
                 {
                     txt = rdf_node(g, n.nodes[i], true, NULL);
                     //Write empty space plus txt here;
-                    int suc = fprintf(out_fd, " %s", txt);
+                    int suc = fprintf(out_fd, "\t%s", txt);
                     if (suc  == EOF) {
                         free(label);
                         free(txt);
@@ -742,6 +778,78 @@ static int do_decompress(CGraphR* g, const char* output, const char* format, boo
             }
             free(label);
         }
+        res = 0;
+
+	*/
+		char *label, *txt;
+        char *txt_s, *txt_p, *txt_o;
+        SerdNode s, p, o;
+
+
+		//For schleifen auf 0 setzen
+        size_t node_count = cgraphr_node_count(g);
+		//loop through version
+        for (size_t v = 0; v < 11; v++) {
+            
+			
+			//CGraphNode nodes[] = {v, -1};
+            CGraphNode nodes[] = {-1, -1, v, -1};
+			//HIER HINZUGEFÜGT
+			CGraphEdgeIterator *it = cgraphr_edges(g, 4, CGRAPH_LABELS_ALL, nodes);
+            //CGraphEdgeIterator *it = cgraphr_edges(g, 2, CGRAPH_LABELS_ALL, nodes);
+            if (!it) {
+                free(txt_s);
+            }
+
+            CGraphEdge n;
+            while (cgraphr_edges_next(it, &n)) {
+                //write label here.
+				//PRINT LABEL
+				label = rdf_node(g, n.label, false, NULL);
+                if (fprintf(out_fd, "%s", label) == EOF)
+                {
+                    free(label);
+                    cgraphr_edges_finish(it);
+                    goto exit_0;
+                }
+				//PRINT NODE 0,1
+                for (CGraphRank i = 0; i < n.rank-2; i++)
+                {
+                    txt = rdf_node(g, n.nodes[i], true, NULL);
+                    //Write empty space plus txt here;
+                    int suc = fprintf(out_fd, " %s", txt);
+                    if (suc  == EOF) {
+                        free(label);
+                        free(txt);
+                        cgraphr_edges_finish(it);
+                        goto exit_0;
+                    }
+                    free(txt);
+                }
+				//PRINT VERSION
+				for (CGraphRank i = n.rank-2; i < n.rank; i++)
+                {
+
+                    //Write empty space plus txt here;
+                    int suc = fprintf(out_fd, " %ld", n.nodes[i]);
+                    if (suc  == EOF) {
+                        free(label);
+                        free(txt);
+                        cgraphr_edges_finish(it);
+                        goto exit_0;
+                    }
+                    //free(txt);
+                }
+                if (fprintf(out_fd, "\n") == EOF)
+                {
+                    free(label);
+                    cgraphr_edges_finish(it);
+                    goto exit_0;
+                }
+			}
+            
+        }
+
         res = 0;
     }
     else {
@@ -914,6 +1022,7 @@ int parse_hyperedge_arg(const char* s, HyperedgeArg* arg, bool* exists_query, bo
             return -1;
     }
 
+
     for (int npc = 0; npc < rank && * s == ','; npc++) {
         if(*(++s) == '?') {
             s++;
@@ -1016,6 +1125,35 @@ void edge_append(EdgeList* l, CGraphEdge* e) {
 
 	l->data[l->len++] = *e;
 }
+
+int parse_version_included_arg(const char* s, HyperedgeArg* arg, uint64_t* version_start, uint64_t* version_end) {
+
+	arg->rank = 4;
+	arg->label = -1;
+	for(int i=0; i < arg->rank;i++)
+		arg->nodes[i] = -1;
+	s = parse_int(s, version_start);
+    if(!s)
+        return -1;
+
+    switch(*s) {
+        case ',':
+            break;
+        default:
+            return -1;
+    }
+	s++;
+	s = parse_int(s, version_end);
+
+	switch(*s) {
+        case '\0':
+			return 1;
+        default:
+            return -1;
+    }
+
+}
+
 
 static int do_read(const char* input, const CGraphArgs* argd) {
 	CGraphR* g = cgraphr_init(input);
@@ -1151,6 +1289,7 @@ static int do_read(const char* input, const CGraphArgs* argd) {
             HyperedgeArg arg;
             bool exist_query = false;
             bool predicate_query = false;
+			
             if(parse_hyperedge_arg(cmd->arg_str, &arg, &exist_query, &predicate_query) < 0) {
                 fprintf(stderr, "failed to parse edge argument \"%s\"\n", cmd->arg_str);
                 break;
@@ -1190,7 +1329,7 @@ static int do_read(const char* input, const CGraphArgs* argd) {
                 }
                 printf(")\n");
             }
-
+			printf("%li \n", ls.len);
             for (int i = 0; i < ls.len; i++)
             {
                 free(ls.data[i].nodes);
@@ -1209,6 +1348,125 @@ static int do_read(const char* input, const CGraphArgs* argd) {
 			printf("%zu\n", cgraphr_edge_label_count(g));
 			res = 0;
 			break;
+		case CMD_VERSION_INCLUDED: {
+            HyperedgeArg arg;
+			//SET RANK to 4, Label and Nodes to ALL Label and Nodes
+			uint64_t version_start;
+			uint64_t version_end; 
+            if(parse_version_included_arg(cmd->arg_str, &arg, &version_start, &version_end) < 0) {
+                fprintf(stderr, "failed to parse edge argument \"%s\"\n", cmd->arg_str);
+                break;
+ 			}
+			int num_labels = cgraphr_edge_label_count(g);
+            CGraphEdgeIterator* it;
+ 
+			for (int label = 0; label < num_labels; label++)
+			{
+				arg.label = label;
+                it = cgraphr_edges_by_predicate(g, arg.label);
+
+
+            if(!it)
+                break;
+
+            CGraphEdge n;
+            EdgeList ls = {0}; // list is empty
+            while(cgraphr_edges_next(it, &n))
+                edge_append(&ls, &n);
+
+            // sort the edges
+            qsort(ls.data, ls.len, sizeof(CGraphEdge), cmp_edge);
+
+            for(size_t i = 0; i < ls.len; i++) {
+				if(ls.data[i].nodes[2]<= version_start && ls.data[i].nodes[3]>= version_end)
+				{
+                printf("(%" PRId64, ls.data[i].label);
+                for (CGraphRank j = 0; j < ls.data[i].rank; j++) {
+					
+                    printf(",\t%" PRId64, ls.data[i].nodes[j]);
+                }
+                printf(")\n");
+				}
+            }
+
+            for (int i = 0; i < ls.len; i++)
+            {
+                free(ls.data[i].nodes);
+            }
+            if(ls.data)
+                free(ls.data);
+			}
+            res = 0;
+            break;
+        }
+		//UMBENNENEN
+		case CMD_NODE_IN_VERSION: {
+            HyperedgeArg arg;
+            bool exist_query = false;
+            bool predicate_query = false;
+			
+            if(parse_hyperedge_arg(cmd->arg_str, &arg, &exist_query, &predicate_query) < 0) {
+                fprintf(stderr, "failed to parse edge argument \"%s\"\n", cmd->arg_str);
+                break;
+            }
+			//SET Version start and Version end to last 2 values of parsed arg and last 2 values to -1
+			uint64_t version_start = arg.nodes[2];
+			uint64_t version_end = arg.nodes[3]; 
+			arg.nodes[2] = -1;
+			arg.nodes[3] = -1; 
+			exist_query = false;
+			predicate_query = false;
+            if (exist_query) {
+                bool exists = cgraphr_edge_exists(g, arg.rank, arg.label, arg.nodes);
+                printf("%d\n", exists ? 1 : 0);
+                res = 0;
+                break;
+            }
+            CGraphEdgeIterator* it;
+            if (predicate_query)
+            {
+                it = cgraphr_edges_by_predicate(g, arg.label);
+            }
+            else
+            {
+                it = cgraphr_edges(g, arg.rank, arg.label, arg.nodes) ;
+            }
+
+            if(!it)
+                break;
+
+            CGraphEdge n;
+            EdgeList ls = {0}; // list is empty
+            while(cgraphr_edges_next(it, &n))
+                edge_append(&ls, &n);
+
+            // sort the edges
+            qsort(ls.data, ls.len, sizeof(CGraphEdge), cmp_edge);
+			int count = 0;
+            for(size_t i = 0; i < ls.len; i++) {
+				if(ls.data[i].nodes[2]<= version_start && ls.data[i].nodes[3]>= version_end)
+				{
+                printf("(%" PRId64, ls.data[i].label);
+				count++;
+                for (CGraphRank j = 0; j < ls.data[i].rank; j++) {
+                    printf(",\t%" PRId64, ls.data[i].nodes[j]);
+                }
+                printf(")\n");
+				}
+            }
+			if(count == 0)
+				printf("The given Node does not exists in this interval of versions.");
+			
+            for (int i = 0; i < ls.len; i++)
+            {
+                free(ls.data[i].nodes);
+            }
+            if(ls.data)
+                free(ls.data);
+
+            res = 0;
+            break;
+        }
 		case CMD_NONE:
 			goto exit;
 		}	
@@ -1218,7 +1476,9 @@ exit:
 	cgraphr_destroy(g);
 	return res;
 }
-
+//CHANGED MAX RANK FROM 12 -> 64
+//CHANGE FACTOR FROM 8 -> 64
+//CHANGE SAMPLING FROM 32 -> 0
 int main(int argc, char** argv) {
 	if(argc <= 1) {
 		print_usage(true);
@@ -1240,7 +1500,23 @@ int main(int argc, char** argv) {
 			fprintf(stderr, "expected 2 parameters when compressing RDF graphs\n");
 			return EXIT_FAILURE;
 		}
+		// ONLY FOR WRITING DATA
+		/*
+		FILE *fpt;
+		fpt = fopen("/home/dtkhuat/results/sizes/17_04_24.csv", "a");
+		char *filename = strrchr(cmd_argv[0], '/');
+		fprintf(fpt,"File-name, Original Size, IncidenceRePair Compressed size,Indexed Edges Compressed size\n");
+		fprintf(fpt, "%s, ", filename+1);
 
+		//char buf[500]; 
+		//strcpy(buf, );
+		FILE *size_file = fopen(cmd_argv[0], "a");
+		fseek(size_file, 0L, SEEK_END);
+		long int sz = ftell(size_file);
+		fprintf(fpt, "%li, ", sz);
+		fseek(size_file, 0L, SEEK_SET);
+		fclose(fpt);
+		*/
 		if(do_compress(cmd_argv[0], cmd_argv[1], &argd) < 0)
 			return EXIT_FAILURE;
 	}

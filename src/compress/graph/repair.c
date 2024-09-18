@@ -1336,11 +1336,13 @@ SLHRGrammar* repair(HGraph* g, uint64_t nodes, uint64_t terminals, int max_rank,
 		goto repair_err;
 	if(replace_monograms && repair_replace_monograms(gr) < 0)
 		goto repair_err;
+
+	
 	if(repair_prune(gr) < 0)
 		goto repair_err;
 	if(repair_normalize(gr) < 0)
 		goto repair_err;
-
+	
 	return gr;
 
 repair_err:
