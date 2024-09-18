@@ -115,11 +115,11 @@ FURTHER ADDITIONS:
  * to compress a version graph:
  ./cgraph-cli --format hyperedge [input] [output]
                         [input]         input file of the version graph
-                       [output]         output file of the compressed graph
+                        [output]         output file of the compressed graph
 
    commands to read the compressed path:
           --version-included  [start][end]        returns all edges which include the version-interval [start, end] 
-          --edge-version  [node1][node2]        returns all edges with their version between node1 and node2 
+          --edge-version      [node1][node2]        returns all edges with their version between node1 and node2 
 
 
 ```
