@@ -116,7 +116,7 @@ enum opt {
 	OPT_R_NODE_COUNT,
 	OPT_R_EDGE_LABELS,
 	OPT_R_VERSION_INCLUDED,
-	OPT_R_NODE_IN_VERSION,
+	OPT_R_EDGE_VERSION,
 };
 
 typedef enum {
@@ -133,7 +133,7 @@ typedef enum {
 	CMD_NODE_COUNT,
 	CMD_EDGE_LABELS,
 	CMD_VERSION_INCLUDED,
-	CMD_NODE_IN_VERSION,
+	CMD_EDGE_VERSION,
 } CGraphCmd;
 
 typedef struct {
@@ -266,7 +266,7 @@ static int parse_args(int argc, char** argv, CGraphArgs* argd) {
 		{"node-count", no_argument, 0, OPT_R_NODE_COUNT},
 		{"edge-labels", no_argument, 0, OPT_R_EDGE_LABELS},
 		{"version-included", required_argument, 0, OPT_R_VERSION_INCLUDED},
-		{"node-in-version", required_argument, 0, OPT_R_NODE_IN_VERSION},
+		{"edge-version", required_argument, 0, OPT_R_EDGE_VERSION},
 		{0, 0, 0, 0}
 	};
 
@@ -399,9 +399,9 @@ static int parse_args(int argc, char** argv, CGraphArgs* argd) {
 			check_mode(mode_compress, mode_read, false);
 			add_command_str(argd, CMD_VERSION_INCLUDED);
 			break;
-		case OPT_R_NODE_IN_VERSION:
+		case OPT_R_EDGE_VERSION:
 			check_mode(mode_compress, mode_read, false);
-			add_command_str(argd, CMD_NODE_IN_VERSION);	
+			add_command_str(argd, CMD_EDGE_VERSION);	
 			break;
 		case '?':
 		case ':':
@@ -1145,13 +1145,43 @@ int parse_version_included_arg(const char* s, HyperedgeArg* arg, uint64_t* versi
 	s++;
 	s = parse_int(s, version_end);
 
+	
 	switch(*s) {
         case '\0':
 			return 1;
         default:
             return -1;
     }
+	
+}
 
+
+int parse_node_in_version_arg(const char* s, HyperedgeArg* arg) {
+
+	arg->rank = 4;
+	arg->label = -1;
+	for(int i=0; i < arg->rank;i++)
+		arg->nodes[i] = -1;
+
+	s = parse_int(s, (uint64_t *) &arg->nodes[0]);
+    if(!s)
+        return -1;
+	
+    switch(*s) {
+        case ',':
+            break;
+        default:
+            return -1;
+    }
+	s++;
+	s = parse_int(s, (uint64_t *) &arg->nodes[1]);
+	
+	switch(*s) {
+        case '\0':
+			return 1;
+        default:
+            return -1;
+    }
 }
 
 
@@ -1357,9 +1387,50 @@ static int do_read(const char* input, const CGraphArgs* argd) {
                 fprintf(stderr, "failed to parse edge argument \"%s\"\n", cmd->arg_str);
                 break;
  			}
+			
 			int num_labels = cgraphr_edge_label_count(g);
             CGraphEdgeIterator* it;
- 
+			
+			for(uint64_t i = 1; i <= version_start; i++) {
+				for(uint64_t j = version_end; j <= 10; j++){
+					arg.label = -1;
+					arg.nodes[0] = -1;
+					arg.nodes[1] = -1;
+					arg.nodes[2] = i;
+					arg.nodes[3] = j;
+					it = cgraphr_edges(g, arg.rank, arg.label, arg.nodes) ;
+					if(!it)
+						break;
+
+					CGraphEdge n;
+					EdgeList ls = {0}; // list is empty
+					while(cgraphr_edges_next(it, &n))
+						edge_append(&ls, &n);
+
+					// sort the edges
+					qsort(ls.data, ls.len, sizeof(CGraphEdge), cmp_edge);
+
+					for(size_t i = 0; i < ls.len; i++) {
+						printf("(%" PRId64, ls.data[i].label);
+						for (CGraphRank j = 0; j < ls.data[i].rank; j++) {
+							printf(",\t%" PRId64, ls.data[i].nodes[j]);
+						}
+						printf(")\n");
+					}
+
+					if(ls.data)
+						free(ls.data);
+				for (int i = 0; i < ls.len; i++)
+				{
+					free(ls.data[i].nodes);
+				}
+					}
+
+				}
+					
+			/*
+			int num_labels = cgraphr_edge_label_count(g);
+			CGraphEdgeIterator* it;
 			for (int label = 0; label < num_labels; label++)
 			{
 				arg.label = label;
@@ -1376,7 +1447,7 @@ static int do_read(const char* input, const CGraphArgs* argd) {
 
             // sort the edges
             qsort(ls.data, ls.len, sizeof(CGraphEdge), cmp_edge);
-
+			
             for(size_t i = 0; i < ls.len; i++) {
 				if(ls.data[i].nodes[2]<= version_start && ls.data[i].nodes[3]>= version_end)
 				{
@@ -1396,11 +1467,14 @@ static int do_read(const char* input, const CGraphArgs* argd) {
             if(ls.data)
                 free(ls.data);
 			}
+			*/
             res = 0;
             break;
+			
         }
 		//UMBENNENEN
-		case CMD_NODE_IN_VERSION: {
+		case CMD_EDGE_VERSION: {
+			/*
             HyperedgeArg arg;
             bool exist_query = false;
             bool predicate_query = false;
@@ -1429,7 +1503,7 @@ static int do_read(const char* input, const CGraphArgs* argd) {
             }
             else
             {
-                it = cgraphr_edges(g, arg.rank, arg.label, arg.nodes) ;
+                it = cgraphr_edges(g, arg.rank, arg.label, arg.nodes);
             }
 
             if(!it)
@@ -1456,7 +1530,30 @@ static int do_read(const char* input, const CGraphArgs* argd) {
             }
 			if(count == 0)
 				printf("The given Node does not exists in this interval of versions.");
-			
+			*/
+			HyperedgeArg arg;
+            if(parse_node_in_version_arg(cmd->arg_str, &arg) < 0) {
+                fprintf(stderr, "failed to parse edge argument \"%s\"\n", cmd->arg_str);
+                break;
+            }
+			CGraphEdgeIterator* it;
+			CGraphEdge n;
+            EdgeList ls = {0}; // list is empty
+
+			it = cgraphr_edges(g, arg.rank, arg.label, arg.nodes) ;
+            while(cgraphr_edges_next(it, &n))
+                edge_append(&ls, &n);
+
+            for(size_t i = 0; i < ls.len; i++) {
+                printf("(%" PRId64, ls.data[i].label);
+                for (CGraphRank j = 0; j < ls.data[i].rank; j++) {
+                    printf(",\t%" PRId64, ls.data[i].nodes[j]);
+                }
+                printf(")\n");
+            }
+
+			if(ls.len == 0)
+				printf("The given Node does not exists in this interval of versions.");
             for (int i = 0; i < ls.len; i++)
             {
                 free(ls.data[i].nodes);
@@ -1466,11 +1563,12 @@ static int do_read(const char* input, const CGraphArgs* argd) {
 
             res = 0;
             break;
+			
         }
 		case CMD_NONE:
 			goto exit;
 		}	
-	}
+}
 
 exit:
 	cgraphr_destroy(g);
